@@ -1,9 +1,9 @@
-using System.Collections;
+﻿using System.Collections;
 using UnityEngine;
 
 public class Gem : MonoBehaviour
 {
-    [HideInInspector] public Vector2Int posIndex { get; private set; }
+    [HideInInspector] public Vector2Int posIndex; // Board'da set ediyoruz.
     [HideInInspector] public Board board { get; private set; }
 
     // Gem Movement
@@ -53,9 +53,12 @@ public class Gem : MonoBehaviour
         {
             isMousePressed = false;
 
-            finalTouchPosition = _cam.ScreenToWorldPoint(Input.mousePosition);
-            CalculateAngle();
-            Debug.Log(swipeAngle);
+            if (board.currentState == Board.BoardState.move)
+            {
+                finalTouchPosition = _cam.ScreenToWorldPoint(Input.mousePosition);
+                CalculateAngle();
+                Debug.Log(swipeAngle);
+            }
         }
     }
 
@@ -66,10 +69,14 @@ public class Gem : MonoBehaviour
         type = newType;
     }
 
+    #region Gem Movement
     private void OnMouseDown()
     {
-        firstTouchPosition = _cam.ScreenToWorldPoint(Input.mousePosition);
-        isMousePressed = true;
+        if (board.currentState == Board.BoardState.move) 
+        {
+            firstTouchPosition = _cam.ScreenToWorldPoint(Input.mousePosition);
+            isMousePressed = true;
+        }
     }
 
     private void CalculateAngle()
@@ -87,6 +94,7 @@ public class Gem : MonoBehaviour
             MovePieces();
         }
     }
+    #endregion
 
     private void MovePieces()
     {
@@ -134,8 +142,11 @@ public class Gem : MonoBehaviour
         }
     }
 
+    // Burada doğrudan parametre vererek olası bug ihtimalini yok et.
     public IEnumerator CheckMoveCo()
     {
+        board.currentState = Board.BoardState.wait;
+
         yield return new WaitForSeconds(.5f);
 
         board.matchFinder.FindAllMatches();
@@ -149,6 +160,14 @@ public class Gem : MonoBehaviour
 
                 board.allGems[posIndex.x, posIndex.y] = this;
                 board.allGems[otherGem.posIndex.x, otherGem.posIndex.y] = otherGem;
+
+                yield return new WaitForSeconds(.5f);
+
+                board.currentState = Board.BoardState.move;
+            } 
+            else
+            {
+                board.DestroyMatches();
             }
         }
     }
